@@ -1,26 +1,25 @@
+
+import fs from "node:fs/promises";
+import Path from "node:path";
+
+import { Utf8 } from "@cloudquery/plugin-sdk-javascript/arrow";
+import type {
+  Column,
+} from "@cloudquery/plugin-sdk-javascript/schema/column";
+import { pathResolver } from "@cloudquery/plugin-sdk-javascript/schema/resolvers";
 import type {
   Table,
   TableResolver,
 } from "@cloudquery/plugin-sdk-javascript/schema/table";
 import { createTable } from "@cloudquery/plugin-sdk-javascript/schema/table";
-
+import { parse } from "csv-parse";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat.js";
 import localizedFormat from "dayjs/plugin/localizedFormat.js";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
-
 import pMap from "p-map";
 import type { Logger } from "winston";
-import { readdir, Dirent } from "fs";
-import Path from "path";
-import fs from "node:fs/promises";
-import { parse } from "csv-parse";
-import {
-  Column,
-} from "@cloudquery/plugin-sdk-javascript/schema/column";
-import { Utf8 } from "@cloudquery/plugin-sdk-javascript/arrow";
-import { pathResolver } from "@cloudquery/plugin-sdk-javascript/schema/resolvers";
 
 /* eslint-disable import/no-named-as-default-member */
 dayjs.extend(utc);
@@ -46,9 +45,9 @@ const parseTable = async (
   csvDelimiter: string,
 ): Promise<string[][]> => {
   return new Promise((resolve, reject) => {
-    parse(content, { delimiter: csvDelimiter }, (err, records) => {
-      if (err) {
-        reject(err);
+    parse(content, { delimiter: csvDelimiter }, (error, records) => {
+      if (error) {
+        reject(error);
         return;
       }
       resolve(records);
@@ -56,7 +55,7 @@ const parseTable = async (
   });
 };
 
-const getColumnResolver = (c: string): any => {
+const getColumnResolver = (c: string) => {
   return pathResolver(c);
 }
 
@@ -88,19 +87,19 @@ const getTableFromFile = async (
   const columnNames = rawTable[0];
   const getRecordObjectFromRow = (row: string[]) => {
     const record: Record<string, string> = {};
-    for(let i = 0; i < row.length; i += 1) {
-      record[columnNames[i]] = row[i];
+    for(const [index, element] of row.entries()) {
+      record[columnNames[index]] = element;
     }
     return record;
   }
 
-  const resolver: TableResolver = async (clientMeta, parent, stream) => {
+  const resolver: TableResolver = (clientMeta, parent, stream) => {
     const records = rawTable.filter((_record, index) => index > 0);
     for (const record of records) {
       const recordAsObject = getRecordObjectFromRow(record);
       stream.write(recordAsObject);
     }
-    return;
+    return Promise.resolve();
   };
   return createTable({ name, columns, resolver });
 };

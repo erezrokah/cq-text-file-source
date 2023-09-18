@@ -1,8 +1,8 @@
 import test from 'ava';
+import { createLogger, transports, format } from 'winston';
 
 import { newFilePlugin } from "./plugin.js"
 import { getTableName, getTables } from "./tables.js"
-import { createLogger, transports, format } from 'winston';
 
 test("loads a csv", async (t) => {
     const plugin = newFilePlugin();
@@ -12,7 +12,7 @@ test("loads a csv", async (t) => {
     t.deepEqual(tables[0].columns.map((c)=>c.name),["Name", "Count"]);
 });
 
-test("getTableName returns file name without extension", async (t) => {
+test("getTableName returns file name without extension", (t) => {
     const name = getTableName("test_data/sample.csv");
     t.is(name, "sample");
 });
